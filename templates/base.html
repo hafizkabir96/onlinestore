@@ -1,0 +1,175 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>{% block title %}{{ request.vendor.store_name|default:"OnlineStore" }}{% endblock %}</title>
+
+    <!-- Tailwind + Poppins -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { fontFamily: { sans: ['Poppins', 'sans-serif'] } } }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <style>
+        .hamburger.active .bar:nth-child(2) { opacity: 0; }
+        .hamburger.active .bar:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+        .hamburger.active .bar:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col">
+
+    <!-- NAVBAR -->
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+
+                <!-- Logo -->
+                <div class="flex items-center">
+                    <button id="mobile-menu-button" class="md:hidden p-2 rounded-md text-gray-600 hover:bg-gray-100">
+                        <span class="hamburger block w-6 h-6">
+                            <span class="bar block w-full h-0.5 bg-current"></span>
+                            <span class="bar block w-full h-0.5 bg-current mt-1.5"></span>
+                            <span class="bar block w-full h-0.5 bg-current mt-1.5"></span>
+                        </span>
+                    </button>
+
+                    <a href="{% if request.vendor %}{% url 'vendors:vendor_store' request.vendor.slug %}{% else %}{% url 'vendors:home' %}{% endif %}"
+                       class="flex items-center ml-3 md:ml-0">
+                        {% if request.vendor.logo %}
+                            <img src="{{ request.vendor.logo.url }}" alt="Logo" class="w-10 h-10 rounded-full object-cover border-2 border-white shadow">
+                        {% else %}
+                            <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold shadow">
+                                {{ request.vendor.store_name|slice:":2"|upper|default:"OS" }}
+                            </div>
+                        {% endif %}
+                        <span class="ml-3 text-xl font-bold text-blue-600">
+                            {{ request.vendor.store_name|default:"OnlineStore" }}
+                        </span>
+                    </a>
+                </div>
+
+                <!-- DESKTOP: Vendor Auth Only -->
+                <div class="hidden md:flex items-center space-x-6">
+                    {% if user.is_authenticated and user.vendor %}
+                        <a href="{% url 'vendors:vendor_dashboard' %}"
+                           class="flex items-center text-gray-700 hover:text-blue-600 font-medium transition">
+                            <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
+                        </a>
+                        <form method="post" action="{% url 'vendors:vendor_logout' %}" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" class="text-red-600 hover:text-red-700 font-medium flex items-center">
+                                <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                            </button>
+                        </form>
+                    {% else %}
+                        <a href="{% url 'vendors:vendor_login' %}"
+                           class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition shadow">
+                            Vendor Login
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- MOBILE MENU -->
+        <div id="mobile-menu" class="md:hidden hidden bg-white border-t border-gray-200">
+            <div class="px-4 pt-2 pb-3 space-y-1">
+                {% if user.is_authenticated and user.vendor %}
+                    <a href="{% url 'vendors:vendor_dashboard' %}"
+                       class="flex items-center px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100">
+                        <i class="fas fa-tachometer-alt mr-3"></i> Dashboard
+                    </a>
+                    <form method="post" action="{% url 'vendors:vendor_logout' %}" class="block">
+                        {% csrf_token %}
+                        <button type="submit" class="w-full text-left px-3 py-2 rounded-md text-red-600 hover:bg-red-50 flex items-center">
+                            <i class="fas fa-sign-out-alt mr-3"></i> Logout
+                        </button>
+                    </form>
+                {% else %}
+                    <a href="{% url 'vendors:vendor_login' %}"
+                       class="block px-3 py-2 rounded-md bg-blue-600 text-white text-center font-medium hover:bg-blue-700">
+                        Vendor Login
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- FLASH MESSAGES -->
+    {% if messages %}
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+            {% for message in messages %}
+                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg mb-3 shadow-sm flex items-center justify-between">
+                    <span>{{ message }}</span>
+                    <button onclick="this.parentElement.remove()" class="ml-4 text-green-600 hover:text-green-800">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-gray-800 text-white py-8 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p class="text-sm">
+                &copy; {{ year|default:"2025" }} <strong>{{ request.vendor.store_name|default:"OnlineStore" }}</strong>
+            </p>
+            <p class="text-xs text-gray-400 mt-1">Vendor Dashboard • Multi-Store Platform</p>
+        </div>
+    </footer>
+
+    <!-- MOBILE MENU TOGGLE -->
+    <script>
+        document.getElementById('mobile-menu-button').addEventListener('click', () => {
+            const menu = document.getElementById('mobile-menu');
+            const btn = document.querySelector('.hamburger');
+            menu.classList.toggle('hidden');
+            btn.classList.toggle('active');
+        });
+    </script>
+    <script>
+  // Fix double-encoded URLs
+  if (window.location.search.includes('%2520')) {
+    const clean = window.location.href.replace(/%2520/g, '%20').replace(/%20/g, '');
+    history.replaceState(null, '', clean);
+  }
+</script>
+<script>
+    // Auto-add CSRF to all forms
+    document.addEventListener('submit', function(e) {
+        if (e.target.tagName === 'FORM' && e.target.method.toUpperCase() === 'POST') {
+            if (!e.target.querySelector('input[name="csrfmiddlewaretoken"]')) {
+                const token = document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
+                              '{{ csrf_token }}';
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'csrfmiddlewaretoken';
+                input.value = token;
+                e.target.appendChild(input);
+            }
+        }
+    });
+</script>
+
+
+    {% block extra_js %}
+    {% endblock %}
+</body>
+</html>

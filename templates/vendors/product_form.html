@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+{% comment %}
+templates/vendors/product_form.html
+{% endcomment %}
+
+{% load static %}
+
+{% block title %}
+    {% if title == "Add New Product" %}Add{% else %}Edit{% endif %} Product
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { width: 100%; overflow-x: hidden; margin:0; padding:0; }
+
+    .page { min-height: 100vh; background:#f9fafb; padding:1.5rem 1rem; }
+    .card { background:white; border-radius:1rem; box-shadow:0 10px 15px -3px rgba(0,0,0,.1);
+            border:1px solid #f3f4f6; max-width:32rem; margin:auto; }
+
+    .form { padding:1.25rem; display:flex; flex-direction:column; gap:1.25rem; }
+    label { font-size:.875rem; font-weight:600; color:#1f2937; margin-bottom:.375rem; display:block; }
+
+    input:not([type=checkbox]), textarea {
+        width:100%; padding:.625rem .875rem; font-size:1rem;
+        border:1px solid #d1d5db; border-radius:.5rem; transition:all .2s;
+    }
+    input:focus, textarea:focus {
+        outline:none; border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.2);
+    }
+    textarea { height:5rem; resize:vertical; }
+
+    .checkbox { width:1.25rem; height:1.25rem; accent-color:#2563eb; }
+
+    .preview { width:100%; max-width:13.75rem; height:12rem; object-fit:cover;
+               border-radius:.75rem; box-shadow:0 1px 3px rgba(0,0,0,.1);
+               margin:.75rem auto; display:block; }
+
+    .btn { width:100%; padding:.875rem; border-radius:.75rem; font-weight:700;
+           text-align:center; font-size:1rem; text-decoration:none; display:block; }
+    .btn-primary { background:#2563eb; color:white; }
+    .btn-primary:hover { background:#1d4ed8; }
+    .btn-secondary { background:#f3f4f6; color:#1f2937; }
+    .btn-secondary:hover { background:#e5e7eb; }
+
+    /* ─────── CUSTOM DROPDOWN UI ─────── */
+    .dropdown {
+        position:relative;
+    }
+    .dropdown-toggle {
+        width:100%; padding:.625rem .875rem; background:white;
+        border:1px solid #d1d5db; border-radius:.5rem; cursor:pointer;
+        display:flex; justify-content:space-between; align-items:center;
+        font-size:1rem; transition:all .2s;
+    }
+    .dropdown-toggle:focus {
+        outline:none; border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.2);
+    }
+    .dropdown-menu {
+        position:absolute; top:100%; left:0; right:0; z-index:50;
+        background:white; border:1px solid #d1d5db; border-radius:.5rem;
+        max-height:200px; overflow-y:auto; box-shadow:0 4px 12px rgba(0,0,0,.1);
+        display:none;
+    }
+    .dropdown.open .dropdown-menu { display:block; }
+    .dropdown-search {
+        padding:.5rem .75rem; border-bottom:1px solid #e5e7eb;
+    }
+    .dropdown-search input {
+        width:100%; padding:.375rem .5rem; border:1px solid #d1d5db;
+        border-radius:.375rem; font-size:.875rem;
+    }
+    .dropdown-item {
+        padding:.5rem .75rem; cursor:pointer; font-size:.95rem;
+        transition:background .15s;
+    }
+    .dropdown-item:hover { background:#f3f4f6; }
+    .dropdown-item[data-level="0"] { font-weight:600; color:#1e40af; }
+    .dropdown-item[data-level="1"] { padding-left:1.5rem; }
+    .dropdown-item[data-level="2"] { padding-left:2.5rem; }
+    .dropdown-item[data-level="3"] { padding-left:3.5rem; }
+    .dropdown-item.selected { background:#dbeafe; color:#1d4ed8; }
+
+    @media (min-width:640px) {
+        .card { max-width:36rem; }
+        .grid-responsive { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="card">
+        <div class="text-center mb-5 p-5 pb-0">
+            <h1 class="text-2xl font-bold text-gray-900 flex items-center justify-center gap-2">
+                <i class="fas fa-cube text-blue-600"></i>
+                {{ title }}
+            </h1>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" class="form">
+            {% csrf_token %}
+
+            <div class="grid-responsive">
+                <div>
+                    <label>Product Name</label>
+                    {{ form.name }}
+                </div>
+                <div>
+                    <label>Price (₦)</label>
+                    <div class="relative">
+                        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-600">₦</span>
+                        {{ form.price }}
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label>Description</label>
+                {{ form.description }}
+            </div>
+
+            <div class="grid-responsive">
+                <!-- CUSTOM CATEGORY DROPDOWN -->
+                <div>
+                    <label>Category</label>
+                    <div class="dropdown" id="categoryDropdown">
+                        <div class="dropdown-toggle" tabindex="0">
+                            <span class="selected-text">— Select Category —</span>
+                            <i class="fas fa-chevron-down ml-2"></i>
+                        </div>
+                        <div class="dropdown-menu">
+                            <div class="dropdown-search">
+                                <input type="text" placeholder="Search categories…" autocomplete="off">
+                            </div>
+                            {% for cat in form.fields.category.queryset %}
+                                <div class="dropdown-item"
+                                     data-value="{{ cat.id }}"
+                                     data-level="{{ cat.get_depth|default:0 }}">
+                                    {{ cat.get_indented_name }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <input type="hidden" name="category" value="{{ form.instance.category_id|default:'' }}">
+                    </div>
+                </div>
+
+                <div>
+                    <label>Stock</label>
+                    {{ form.stock }}
+                </div>
+            </div>
+
+            <div>
+                <label>Image URL</label>
+                {{ form.image_url }}
+                {% if form.instance.image_url %}
+                <img src="{{ form.instance.image_url }}" alt="Preview" class="preview">
+                {% endif %}
+            </div>
+
+            <div class="bg-gray-50 rounded-xl p-4 space-y-3">
+                <label class="flex items-center gap-3">
+                    <input type="checkbox" name="order_via_whatsapp"
+                           {% if form.instance.order_via_whatsapp %}checked{% endif %}
+                           class="checkbox">
+                    <span class="text-sm font-medium">WhatsApp Orders</span>
+                </label>
+                <label class="flex items-center gap-3">
+                    <input type="checkbox" name="is_active"
+                           {% if form.instance.is_active %}checked{% endif %}
+                           class="checkbox">
+                    <span class="text-sm font-medium">Publish Product</span>
+                </label>
+            </div>
+
+            <div class="space-y-3">
+                <button type="submit" class="btn btn-primary">
+                    {% if title == "Add New Product" %}Launch Product{% else %}Update Product{% endif %}
+                </button>
+                <a href="{% url 'vendors:vendor_products' %}" class="btn btn-secondary">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // ─────── CUSTOM DROPDOWN LOGIC ───────
+    document.addEventListener('DOMContentLoaded', () => {
+        const dropdown = document.getElementById('categoryDropdown');
+        const toggle = dropdown.querySelector('.dropdown-toggle');
+        const menu = dropdown.querySelector('.dropdown-menu');
+        const search = menu.querySelector('input');
+        const items = menu.querySelectorAll('.dropdown-item');
+        const hidden = dropdown.querySelector('input[type=hidden]');
+        const selectedText = toggle.querySelector('.selected-text');
+
+        // Open / close
+        toggle.addEventListener('click', () => dropdown.classList.toggle('open'));
+        toggle.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') dropdown.classList.toggle('open');
+        });
+
+        // Close when clicking outside
+        document.addEventListener('click', e => {
+            if (!dropdown.contains(e.target)) dropdown.classList.remove('open');
+        });
+
+        // Select item
+        items.forEach(item => {
+            item.addEventListener('click', () => {
+                hidden.value = item.dataset.value;
+                selectedText.textContent = item.textContent.trim();
+                items.forEach(i => i.classList.remove('selected'));
+                item.classList.add('selected');
+                dropdown.classList.remove('open');
+            });
+        });
+
+        // Search filter
+        search.addEventListener('input', () => {
+            const term = search.value.toLowerCase();
+            items.forEach(item => {
+                const matches = item.textContent.toLowerCase().includes(term);
+                item.style.display = matches ? 'block' : 'none';
+            });
+        });
+
+        // Pre‑select current value
+        const currentId = hidden.value;
+        if (currentId) {
+            const selected = menu.querySelector(`[data-value="${currentId}"]`);
+            if (selected) {
+                selectedText.textContent = selected.textContent.trim();
+                selected.classList.add('selected');
+            }
+        }
+
+        // Auto‑focus name field
+        document.querySelector('[name="name"]')?.focus();
+    });
+</script>
+{% endblock %}

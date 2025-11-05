@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}{{ request.vendor.store_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .product-card { transition: all 0.3s ease; }
+    .product-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.1); }
+    .mobile-filters { transition: max-height 0.3s ease; }
+    .price-badge { @apply text-sm font-bold; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-6">
+
+    <!-- Store Header -->
+    <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl p-6 md:p-8 mb-8 shadow-lg">
+        <div class="flex flex-col md:flex-row items-center gap-6">
+            <div class="flex-1 text-center md:text-left">
+                <h1 class="text-3xl md:text-5xl font-bold mb-2">{{ request.vendor.store_name }}</h1>
+                <p class="text-lg opacity-90">{{ request.vendor.description|default:"Quality products from a trusted vendor." }}</p>
+                <div class="flex flex-wrap gap-3 mt-4 justify-center md:justify-start">
+                    {% if request.vendor.whatsapp_number %}
+                        <a href="https://wa.me/{{ request.vendor.whatsapp_number }}" target="_blank"
+                           class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+                            WhatsApp
+                        </a>
+                    {% endif %}
+                    {% if request.vendor.instagram %}
+                        <a href="{{ request.vendor.instagram }}" target="_blank"
+                           class="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+                            Instagram
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="w-32 h-32 md:w-40 md:h-40">
+                {% if request.vendor.logo %}
+                    <img src="{{ request.vendor.logo.url }}" alt="{{ request.vendor.store_name }}"
+                         class="w-full h-full rounded-full object-cover border-4 border-white shadow-xl">
+                {% else %}
+                    <div class="w-full h-full bg-white rounded-full flex items-center justify-center text-4xl md:text-5xl font-bold text-blue-600 shadow-xl">
+                        {{ request.vendor.store_name|slice:":2"|upper }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+   <!-- Mobile Filter Toggle -->
+<div class="md:hidden mb-4">
+    <button type="button" onclick="document.getElementById('mobile-filters').classList.toggle('hidden')"
+            class="w-full bg-white border border-gray-300 rounded-lg py-3 px-4 flex items-center justify-between font-medium text-gray-700">
+        <span>Filters & Sort</span>
+        <svg class="w-5 h-5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+    </button>
+</div>
+
+<!-- Mobile Filters -->
+<form method="get" id="mobile-filters" class="md:hidden hidden bg-white rounded-lg shadow-md p-4 mb-6 space-y-4">
+    {% include "vendors/partials/filters.html" %}
+</form>
+
+<!-- Desktop Filters -->
+<form method="get" class="hidden md:block bg-white rounded-lg shadow-md p-4 mb-6">
+    {% include "vendors/partials/filters.html" %}
+</form>
+
+    <!-- Filters -->
+    <div id="mobile-filters" class="md:hidden hidden bg-white rounded-lg shadow-md p-4 mb-6 space-y-4">
+        <!-- Mobile Filters Content (same as desktop) -->
+        {% include "vendors/partials/filters.html" %}
+    </div>
+
+    <div class="hidden md:block bg-white rounded-lg shadow-md p-4 mb-6">
+        {% include "vendors/partials/filters.html" %}
+    </div>
+
+    <!-- Product Grid -->
+    <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+        {% for product in page_obj %}
+        <div class="product-card bg-white rounded-xl shadow overflow-hidden flex flex-col">
+            <div class="relative">
+                {% if product.image %}
+                    <img src="{{ product.image.url }}" alt="{{ product.name }}"
+                         class="w-full h-40 sm:h-48 md:h-56 object-cover">
+                {% else %}
+                    <div class="w-full h-40 sm:h-48 md:h-56 bg-gray-200 flex items-center justify-center text-gray-500 text-xs">
+                        No Image
+                    </div>
+                {% endif %}
+                {% if product.stock < 5 and product.stock > 0 %}
+                    <span class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">Low Stock</span>
+                {% endif %}
+            </div>
+            <div class="p-3 md:p-4 flex-1 flex flex-col justify-between">
+                <div>
+                    <h3 class="font-semibold text-sm md:text-base line-clamp-2">{{ product.name }}</h3>
+                    <p class="text-blue-600 font-bold text-lg mt-1">₦{{ product.price }}</p>
+                </div>
+                <form class="add-to-cart-form mt-3" data-product-id="{{ product.id }}">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg text-sm transition">
+                        Add to Cart
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full text-center py-12">
+            <p class="text-gray-500 text-lg">No products found. Try adjusting filters.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_previous or page_obj.has_next %}
+    <div class="flex justify-center mt-8 gap-2">
+        {% if page_obj.has_previous %}
+            <a href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}"
+               class="px-4 py-2 bg-white border rounded-lg text-blue-600 hover:bg-gray-50">First</a>
+            <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}"
+               class="px-4 py-2 bg-white border rounded-lg text-blue-600 hover:bg-gray-50">Previous</a>
+        {% endif %}
+        <span class="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-medium">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </span>
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}"
+               class="px-4 py-2 bg-white border rounded-lg text-blue-600 hover:bg-gray-50">Next</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}"
+               class="px-4 py-2 bg-white border rounded-lg text-blue-600 hover:bg-gray-50">Last</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('.add-to-cart-form').forEach(form => {
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = form.querySelector('button');
+        const original = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = 'Adding...';
+
+        try {
+            const res = await fetch(
+                "{% url 'cart:add_to_cart' request.vendor.slug 0 %}".replace('0', form.dataset.productId),
+                {
+                    method: 'POST',
+                    body: new FormData(form),
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                }
+            );
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('cart-count').textContent = `(${data.cart_count})`;
+                btn.innerHTML = 'Added!';
+                setTimeout(() => btn.innerHTML = original, 1500);
+            } else {
+                btn.innerHTML = 'Error';
+                setTimeout(() => btn.innerHTML = original, 1500);
+            }
+        } catch (err) {
+            btn.innerHTML = 'Failed';
+            setTimeout(() => btn.innerHTML = original, 1500);
+        } finally {
+            btn.disabled = false;
+        }
+    });
+});
+</script>
+{% endblock %}

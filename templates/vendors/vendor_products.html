@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}My Products - {{ vendor.store_name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+    .product-card { @apply bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1; }
+    .status-badge { @apply px-3 py-1 rounded-full text-xs font-medium; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+
+    <!-- Header -->
+    <div class="mb-10">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+                    <i class="fas fa-cubes text-blue-600 mr-3"></i>
+                    My Products
+                </h1>
+                <p class="text-gray-600 mt-2">Manage what you sell • {{ vendor.products.count }} items</p>
+            </div>
+
+            <!-- Add Product Button -->
+            <a href="{% url 'vendors:vendor_product_create' %}"
+               class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition transform hover:scale-105">
+                <i class="fas fa-plus mr-2"></i>
+                Add New Product
+            </a>
+        </div>
+    </div>
+
+    <!-- Search & Filters -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
+        <form method="get" class="grid sm:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                <input type="text" name="q" value="{{ request.GET.q|default:'' }}"
+                       placeholder="Product name..."
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                <select name="category" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if request.GET.category == cat.id|stringformat:"s" %}selected{% endif %}>
+                            {{ cat.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex items-end">
+                <button type="submit"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition">
+                    <i class="fas fa-search mr-2"></i> Search
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Products Grid -->
+    {% if products %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {% for product in products %}
+        <div class="product-card">
+            <!-- Image -->
+            {% if product.image_url %}
+                <div class="aspect-w-1 aspect-h-1 bg-gray-100">
+                    <img src="{{ product.image_url }}" alt="{{ product.name }}"
+                         class="w-full h-48 object-cover">
+                </div>
+            {% else %}
+                <div class="bg-gray-200 border-2 border-dashed rounded-t-xl w-full h-48 flex items-center justify-center">
+                    <i class="fas fa-image text-gray-400 text-4xl"></i>
+                </div>
+            {% endif %}
+
+            <!-- Content -->
+            <div class="p-5">
+                <h3 class="font-bold text-lg text-gray-900 line-clamp-2">
+                    {{ product.name }}
+                </h3>
+                <p class="text-2xl font-bold text-blue-600 mt-2">
+                    ₦{{ product.price|floatformat:2 }}
+                </p>
+
+                <div class="flex items-center gap-3 mt-3 text-sm">
+                    <span class="flex items-center text-gray-600">
+                        <i class="fas fa-box mr-1"></i> {{ product.stock }} in stock
+                    </span>
+                </div>
+
+                <div class="mt-3 flex items-center gap-2">
+                    <span class="status-badge {% if product.is_active %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-600{% endif %}">
+                        {% if product.is_active %}Published{% else %}Draft{% endif %}
+                    </span>
+                    {% if product.order_via_whatsapp %}
+                    <span class="status-badge bg-purple-100 text-purple-700">
+                        WhatsApp
+                    </span>
+                    {% endif %}
+                </div>
+
+                <!-- Edit / Delete Buttons -->
+                <div class="flex gap-4 mt-5 pt-4 border-t border-gray-200">
+                    <a href="{% url 'vendors:vendor_product_update' product.pk %}"
+                       class="flex-1 text-center bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium py-2 rounded-lg transition flex items-center justify-center">
+                        <i class="fas fa-edit mr-2"></i> Edit
+                    </a>
+                    <a href="{% url 'vendors:vendor_product_delete' product.pk %}"
+                       class="flex-1 text-center bg-red-50 hover:bg-red-100 text-red-700 font-medium py-2 rounded-lg transition flex items-center justify-center">
+                        <i class="fas fa-trash mr-2"></i> Delete
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if products.has_other_pages %}
+    <div class="mt-10 flex justify-center">
+        <div class="flex gap-2">
+            {% if products.has_previous %}
+                <a href="?page={{ products.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}"
+                   class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Previous</a>
+            {% endif %}
+
+            <span class="px-4 py-2 bg-blue-600 text-white rounded-lg">
+                Page {{ products.number }} of {{ products.paginator.num_pages }}
+            </span>
+
+            {% if products.has_next %}
+                <a href="?page={{ products.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}"
+                   class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Next</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="text-center py-16">
+        <i class="fas fa-box-open text-gray-400 text-6xl mb-6"></i>
+        <h3 class="text-2xl font-bold text-gray-700">No products yet</h3>
+        <p class="text-gray-500 mt-3">Start selling by adding your first product!</p>
+        <a href="{% url 'vendors:vendor_product_create' %}"
+           class="inline-block mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl">
+            Add Your First Product
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ vendor.store_name }} - Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+    .stat-card {
+        @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all hover:shadow-lg hover:-translate-y-1;
+    }
+    .stat-icon {
+        @apply w-12 h-12 rounded-lg flex items-center justify-center text-white text-xl shadow-md;
+    }
+    .lock-alert {
+        @apply fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-2xl z-50 transform transition-all duration-300;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900">
+        Welcome back, <span class="text-blue-600">{{ vendor.store_name }}</span>!
+    </h1>
+    <p class="text-gray-600 mt-2">Your store is live and secure.</p>
+
+    <!-- LIVE STORE URL -->
+    <div class="mt-5 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+        <div class="flex flex-wrap items-center gap-3">
+            <div class="flex items-center text-sm">
+                <i class="fas fa-globe text-blue-600 mr-2"></i>
+                <span class="font-medium">Your Store:</span>
+            </div>
+            <a href="http://{{ vendor.slug }}.lvh.me:8000" target="_blank"
+               class="text-lg font-bold text-blue-700 hover:underline flex items-center">
+                {{ vendor.slug }}.lvh.me
+                <i class="fas fa-external-link-alt ml-2 text-sm"></i>
+            </a>
+            <button onclick="copyStoreUrl()"
+                    class="ml-2 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition shadow">
+                <i class="fas fa-copy mr-1"></i> Copy
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- STATS GRID -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+    <div class="stat-card">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">Products</p>
+                <p class="text-3xl font-bold text-gray-900 mt-1">{{ vendor.products.count }}</p>
+            </div>
+            <div class="stat-icon bg-gradient-to-br from-blue-500 to-blue-600">
+                <i class="fas fa-box"></i>
+            </div>
+        </div>
+        <a href="{% url 'vendors:vendor_products' %}" class="text-blue-600 text-sm font-medium mt-3 inline-block hover:underline">
+            → Manage Products
+        </a>
+    </div>
+
+    <div class="stat-card">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">Orders</p>
+                <p class="text-3xl font-bold text-gray-900 mt-1">{{ vendor.orders.count|default:"0" }}</p>
+            </div>
+            <div class="stat-icon bg-gradient-to-br from-emerald-500 to-emerald-600">
+                <i class="fas fa-shopping-bag"></i>
+            </div>
+        </div>
+        <a href="{% url 'vendors:vendor_orders' %}" class="text-blue-600 text-sm font-medium mt-3 inline-block hover:underline">
+            → View Orders
+        </a>
+    </div>
+
+    <div class="stat-card">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">Revenue</p>
+                <p class="text-3xl font-bold text-gray-900 mt-1">₦{{ vendor.total_revenue|floatformat:2 }}</p>
+            </div>
+            <div class="stat-icon bg-gradient-to-br from-purple-500 to-purple-600">
+                <i class="fas fa-naira-sign"></i>
+            </div>
+        </div>
+        <p class="text-green-600 text-xs font-bold mt-3">
+            <i class="fas fa-arrow-up"></i> +12% this month
+        </p>
+    </div>
+
+    <div class="stat-card">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">Live Since</p>
+                <p class="text-xl font-bold text-gray-900 mt-1">{{ vendor.created_at|date:"d M Y" }}</p>
+            </div>
+            <div class="stat-icon bg-gradient-to-br from-amber-500 to-amber-600">
+                <i class="fas fa-calendar-check"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- QUICK ACTIONS -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+    <h2 class="text-xl font-semibold text-gray-900 mb-5 flex items-center">
+        <i class="fas fa-bolt text-yellow-500 mr-3"></i> Quick Actions
+    </h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <a href="{% url 'vendors:vendor_products' %}" 
+           class="p-5 bg-blue-50 hover:bg-blue-100 rounded-lg transition text-center">
+            <i class="fas fa-plus text-2xl text-blue-600 mb-2"></i>
+            <p class="font-medium text-gray-800">Add Product</p>
+        </a>
+        <a href="{% url 'vendors:vendor_orders' %}" 
+           class="p-5 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition text-center">
+            <i class="fas fa-truck text-2xl text-emerald-600 mb-2"></i>
+            <p class="font-medium text-gray-800">Fulfill Orders</p>
+        </a>
+        <a href="{% url 'vendors:vendor_profile' %}" 
+           class="p-5 bg-purple-50 hover:bg-purple-100 rounded-lg transition text-center">
+            <i class="fas fa-cog text-2xl text-purple-600 mb-2"></i>
+            <p class="font-medium text-gray-800">Settings</p>
+        </a>
+        <a href="http://{{ vendor.slug }}.lvh.me:8000" target="_blank"
+           class="p-5 bg-amber-50 hover:bg-amber-100 rounded-lg transition text-center">
+            <i class="fas fa-store text-2xl text-amber-600 mb-2"></i>
+            <p class="font-medium text-gray-800">View Store</p>
+        </a>
+    </div>
+</div>
+
+<!-- LOCKED ALERT -->
+<div id="lock-alert" class="lock-alert hidden opacity-0 scale-95">
+    <i class="fas fa-shield-alt mr-2"></i>
+    <strong>DASHBOARD LOCKED</strong> — Back button disabled. You're safe!
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // COPY STORE URL
+    function copyStoreUrl() {
+        const url = `http://{{ vendor.slug }}.lvh.me:8000`;
+        navigator.clipboard.writeText(url);
+        alert("Store URL copied!");
+    }
+
+    // SHOW LOCK ALERT
+    function showLockAlert() {
+        const alert = document.getElementById('lock-alert');
+        alert.classList.remove('hidden', 'opacity-0', 'scale-95');
+        alert.classList.add('opacity-100', 'scale-100');
+        setTimeout(() => {
+            alert.classList.add('opacity-0', 'scale-95');
+            setTimeout(() => alert.classList.add('hidden'), 300);
+        }, 2000);
+    }
+
+    // ULTIMATE BACK BUTTON LOCK
+    (function () {
+        // Flood history
+        for (let i = 0; i < 200; i++) {
+            history.pushState({ locked: true }, '', location.href);
+        }
+
+        // Block all back navigation
+        window.onpopstate = () => history.go(1);
+
+        // Block keyboard
+        document.addEventListener('keydown', e => {
+            if (e.altKey && e.key === 'ArrowLeft') {
+                e.preventDefault();
+                showLockAlert();
+            }
+        });
+
+        // Block context menu back
+        document.addEventListener('contextmenu', e => {
+            if (e.target.tagName === 'A' && e.target.href.includes('back')) {
+                e.preventDefault();
+            }
+        });
+
+        // Final lockdown
+        setTimeout(() => {
+            history.replaceState({ final: true }, '', location.href);
+            for (let i = 0; i < 100; i++) {
+                history.pushState({ final: true }, '', location.href);
+            }
+        }, 200);
+    })();
+</script>
+{% endblock %}

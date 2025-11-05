@@ -1,0 +1,13 @@
+<h2>{{ vendor.store_name }} — Your Products</h2>
+<a href="{% url 'add_product' %}">Add New Product</a>
+<ul>
+  {% for p in products %}
+    <li>
+      {{ p.name }} - ₦{{ p.price }}
+      <a href="{% url 'edit_product' p.id %}">Edit</a>
+      <a href="{% url 'delete_product' p.id %}">Delete</a>
+    </li>
+  {% empty %}
+    <li>No products yet.</li>
+  {% endfor %}
+</ul>

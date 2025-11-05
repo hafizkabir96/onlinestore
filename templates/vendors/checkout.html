@@ -1,0 +1,77 @@
+{# templates/vendors/checkout.html #}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Checkout - {{ vendor.store_name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+    .checkout-card { @apply bg-white rounded-2xl shadow-lg p-6 border border-gray-100; }
+    .input { @apply w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500; }
+    .btn-pay { @apply w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-4 rounded-xl transition shadow-lg; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-8 px-4">
+    <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">
+            Checkout - {{ vendor.store_name }}
+        </h1>
+        <p class="text-gray-600 mt-2">Complete your order in 30 seconds</p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-8">
+        <!-- LEFT: ORDER SUMMARY -->
+        <div class="checkout-card">
+            <h2 class="text-xl font-bold mb-4 flex items-center">
+                Order Summary
+            </h2>
+            <div class="space-y-4">
+                {% for item in cart.items.all %}
+                <div class="flex justify-between items-center pb-3 border-b">
+                    <div>
+                        <p class="font-medium">{{ item.product.name }}</p>
+                        <p class="text-sm text-gray-500">Qty: {{ item.quantity }}</p>
+                    </div>
+                    <p class="font-bold">₦{{ item.total_price }}</p>
+                </div>
+                {% endfor %}
+                <div class="pt-4">
+                    <div class="flex justify-between text-lg font-bold">
+                        <span>Total</span>
+                        <span class="text-green-600">₦{{ cart.total_price }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: CUSTOMER INFO -->
+        <div class="checkout-card">
+            <h2 class="text-xl font-bold mb-4 flex items-center">
+                Delivery Info
+            </h2>
+            <form method="post" action="{% url 'vendors:process_checkout' vendor.slug %}">
+                {% csrf_token %}
+                <div class="space-y-4">
+                    <input type="text" name="name" placeholder="Full Name" required class="input">
+                    <input type="tel" name="phone" placeholder="Phone (WhatsApp)" required class="input">
+                    <input type="text" name="address" placeholder="Delivery Address" required class="input">
+                    <textarea name="note" rows="3" placeholder="Order note (optional)" class="input"></textarea>
+
+                    <button type="submit" class="btn-pay mt-6">
+                        Complete Order via WhatsApp
+                    </button>
+                </div>
+            </form>
+
+            <div class="mt-6 p-4 bg-blue-50 rounded-lg text-center">
+                <p class="text-sm text-blue-800">
+                    Your order will be sent to <strong>{{ vendor.store_name }}</strong> on WhatsApp instantly!
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
